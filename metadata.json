@@ -1,0 +1,5 @@
+{
+  "name": "Legal AI GTM Pipeline",
+  "description": "A full-stack GTM data pipeline for a Legal AI startup, featuring API integration, data enrichment, ICP scoring, routing, experiment assignment, and webhook delivery.",
+  "requestFramePermissions": []
+}

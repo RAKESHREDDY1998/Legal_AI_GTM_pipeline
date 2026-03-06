@@ -1,0 +1,23 @@
+scoring:
+  weights:
+    size: 0.4
+    practice_areas: 0.4
+    location: 0.2
+  thresholds:
+    qualified: 70
+    nurture: 40
+
+routing:
+  enterprise_threshold: 500
+  regions:
+    - US
+    - Australia
+    - Asia
+
+experiment:
+  variants:
+    - A
+    - B
+  weights:
+    - 0.5
+    - 0.5
