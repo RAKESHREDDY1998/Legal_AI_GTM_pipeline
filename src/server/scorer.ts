@@ -11,7 +11,7 @@ export const scoreFirm = (firm: EnrichedFirm, config: any): ScoredFirm => {
   
   // Size criteria
   const lawyerCount = firm.firmographic.lawyerCount;
-  if (lawyerCount > 100) score += config.scoring.weights.size * 100;
+  if (lawyerCount >= 100) score += config.scoring.weights.size * 100;
   else if (lawyerCount > 50) score += config.scoring.weights.size * 50;
   
   // Practice areas criteria

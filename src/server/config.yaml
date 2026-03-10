@@ -9,6 +9,7 @@ scoring:
 
 routing:
   enterprise_threshold: 500
+  mid_market_threshold: 100
   regions:
     - US
     - Australia
@@ -21,3 +22,6 @@ experiment:
   weights:
     - 0.5
     - 0.5
+
+pipeline:
+  deduplication_threshold: 0.8

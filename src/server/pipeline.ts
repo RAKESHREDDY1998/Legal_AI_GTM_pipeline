@@ -34,7 +34,7 @@ export const runPipeline = async (baseUrl: string, config: any, onProgress: (msg
       const isDuplicate = uniqueFirms.some(uf => {
         if (uf.domain === firm.domain) {
           const similarity = stringSimilarity.compareTwoStrings(uf.name.toLowerCase(), firm.name.toLowerCase());
-          return similarity > 0.8;
+          return similarity > config.pipeline.deduplication_threshold;
         }
         return false;
       });

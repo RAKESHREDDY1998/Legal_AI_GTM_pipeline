@@ -18,7 +18,7 @@ export const assignExperiment = (firm: RoutedFirm, config: any): ExperimentedFir
   
   for (let i = 0; i < variants.length; i++) {
     cumulativeWeight += weights[i];
-    if (random <= cumulativeWeight) {
+    if (random < cumulativeWeight) {
       assignedVariant = variants[i];
       break;
     }

@@ -10,7 +10,7 @@ export const routeFirm = (firm: ScoredFirm, config: any): RoutedFirm => {
   if (firm.isQualified) {
     if (firm.firmographic.lawyerCount >= config.routing.enterprise_threshold) {
       route = 'enterprise';
-    } else if (firm.firmographic.lawyerCount >= 100) {
+    } else if (firm.firmographic.lawyerCount >= config.routing.mid_market_threshold) {
       route = 'mid-market';
     } else {
       route = 'smb';
