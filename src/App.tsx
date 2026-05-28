@@ -1,14 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Play, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const [isRunning, setIsRunning] = useState(false);
-  const [logs, setLogs] = useState<{ message: string; data?: any }[]>([]);
-  const [results, setResults] = useState<{ processedFirms: any[], duplicates: any[] } | null>(null);
+  const [logs, setLogs] = useState<{ message: string; timestamp: Date; data?: any }[]>([]);
+  const [results, setResults] = useState<{ processedFirms: any[]; duplicates: any[] } | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
-  const runPipeline = async () => {
+  const runPipeline = useCallback(async () => {
     setIsRunning(true);
     setLogs([]);
     setResults(null);
@@ -17,33 +17,33 @@ export default function App() {
       const response = await fetch('/api/pipeline/run', {
         method: 'POST',
       });
-
       if (!response.body) throw new Error('No response body');
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let buffer = '';
 
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
+        buffer += decoder.decode(value, { stream: true });
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n\n');
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop()!; // Keep trailing incomplete part
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.replace('data: ', '');
+        for (const part of parts) {
+          if (part.startsWith('data: ')) {
+            const dataStr = part.replace('data: ', '');
             if (!dataStr) continue;
-
             try {
               const data = JSON.parse(dataStr);
               if (data.done) {
                 setIsRunning(false);
               } else if (data.error) {
-                setLogs(prev => [...prev, { message: `ERROR: ${data.error}` }]);
+                setLogs(prev => [...prev, { message: `ERROR: ${data.error}`, timestamp: new Date() }]);
                 setIsRunning(false);
               } else {
-                setLogs(prev => [...prev, { message: data.message }]);
+                setLogs(prev => [...prev, { message: data.message, timestamp: new Date() }]);
                 if (data.data && data.data.processedFirms) {
                   setResults(data.data);
                 }
@@ -55,10 +55,10 @@ export default function App() {
         }
       }
     } catch (error: any) {
-      setLogs(prev => [...prev, { message: `ERROR: ${error.message}` }]);
+      setLogs(prev => [...prev, { message: `ERROR: ${error.message}`, timestamp: new Date() }]);
       setIsRunning(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -76,8 +76,8 @@ export default function App() {
             onClick={runPipeline}
             disabled={isRunning}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-              isRunning 
-                ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed' 
+              isRunning
+                ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed'
                 : 'bg-zinc-900 text-white hover:bg-zinc-800'
             }`}
           >
@@ -105,7 +105,7 @@ export default function App() {
                   animate={{ opacity: 1, y: 0 }}
                   className={`${log.message.startsWith('ERROR') ? 'text-red-400' : ''}`}
                 >
-                  <span className="text-zinc-600 mr-2">[{new Date().toLocaleTimeString()}]</span>
+                  <span className="text-zinc-600 mr-2">[{log.timestamp.toLocaleTimeString()}]</span>
                   {log.message}
                 </motion.div>
               ))}
@@ -180,7 +180,6 @@ export default function App() {
                     ))}
                   </div>
                 </div>
-
                 {results.duplicates.length > 0 && (
                   <div>
                     <h3 className="text-sm font-semibold text-zinc-900 mb-3">
