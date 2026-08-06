@@ -34,24 +34,33 @@ export const runPipeline = async (baseUrl: string, config: any, onProgress: (msg
 
     // 2. Deduplication (O(n) using Map instead of O(n^2))
     onProgress('Deduplicating firms...');
-    const seenDomains = new Map<string, any>();
+    // Punctuation-insensitive so "Law Firm 1 LLC" matches "Law Firm 1 L.L.C."
+    const normalizeName = (name: string) =>
+      name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+    const firmsByDomain = new Map<string, any[]>();
     const duplicates: any[] = [];
 
     for (const firm of allFirms) {
-      const existing = seenDomains.get(firm.domain);
-      if (existing) {
-        const similarity = stringSimilarity.compareTwoStrings(
-          existing.name.toLowerCase(),
-          firm.name.toLowerCase()
+      const sameDomain = firmsByDomain.get(firm.domain);
+      if (sameDomain) {
+        const isDuplicate = sameDomain.some(existing =>
+          stringSimilarity.compareTwoStrings(
+            normalizeName(existing.name),
+            normalizeName(firm.name)
+          ) > 0.8
         );
-        if (similarity > 0.8) {
+        if (isDuplicate) {
           duplicates.push(firm);
           continue;
         }
+        // Same domain but genuinely different name: keep both firms
+        sameDomain.push(firm);
+      } else {
+        firmsByDomain.set(firm.domain, [firm]);
       }
-      seenDomains.set(firm.domain, firm);
     }
-    const uniqueFirms = [...seenDomains.values()];
+    const uniqueFirms = [...firmsByDomain.values()].flat();
 
     onProgress(`Deduplication complete. Found ${duplicates.length} duplicates. Processing ${uniqueFirms.length} unique firms.`);
 
